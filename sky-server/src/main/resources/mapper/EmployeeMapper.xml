@@ -28,4 +28,8 @@
     </set>
     where id = #{id}
     </update>
+    <!--根据id查询员工信息-->
+    <select id="getById" resultType="com.sky.entity.Employee">
+        select * from employee where id = #{id}
+    </select>
 </mapper>
