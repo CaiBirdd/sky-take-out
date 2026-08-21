@@ -26,16 +26,18 @@ public class AutoFillAspect {
      * 切入点
      */
     @Pointcut("execution(* com.sky.mapper.*.*(..)) && @annotation(com.sky.annotation.AutoFill)")
+    //拦截所有mapper接口中，带有@AutoFill注解的方法
     public void autoFillPointCut(){}
 
     /**
-     * 前置通知，在通知中进行公共字段的赋值
+     * 前置通知，在目标的Mapper方法执行之前，先执行autoFill方法
      */
     @Before("autoFillPointCut()")
     public void autoFill(JoinPoint joinPoint){
+        //JoinPoint对象中封装了被拦截方法的相关信息
         log.info("开始进行公共字段自动填充...");
 
-        //获取到当前被拦截的方法上的数据库操作类型
+        //获取到当前被拦截的方法上的数据库操作类型,是Insert还是Update
         MethodSignature signature = (MethodSignature) joinPoint.getSignature();//方法签名对象
         AutoFill autoFill = signature.getMethod().getAnnotation(AutoFill.class);//获得方法上的注解对象
         OperationType operationType = autoFill.value();//获得数据库操作类型
@@ -53,10 +55,12 @@ public class AutoFillAspect {
         Long currentId = BaseContext.getCurrentId();
 
         //根据当前不同的操作类型，为对应的属性通过反射来赋值
+        //反射可以理解为：程序运行时，动态获取类的信息，并动态调用它的方法。
         if(operationType == OperationType.INSERT){
             //为4个公共字段赋值
             try {
                 //找方法，不执行
+                //.getClass获取当前对象真实所属的类，因为entity是动态的
                 Method setCreateTime = entity.getClass().getDeclaredMethod(AutoFillConstant.SET_CREATE_TIME, LocalDateTime.class);
                 Method setCreateUser = entity.getClass().getDeclaredMethod(AutoFillConstant.SET_CREATE_USER, Long.class);
                 Method setUpdateTime = entity.getClass().getDeclaredMethod(AutoFillConstant.SET_UPDATE_TIME, LocalDateTime.class);
