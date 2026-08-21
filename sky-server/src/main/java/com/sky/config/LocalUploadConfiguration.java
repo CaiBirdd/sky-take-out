@@ -13,7 +13,7 @@ import java.nio.file.Paths;
 @Configuration
 public class LocalUploadConfiguration {
 
-    private static final String DEFAULT_URL_PREFIX = "http://localhost:8080/upload/images";
+    private static final String DEFAULT_URL_PREFIX = "http://localhost:8081/upload/images";
 
     @Autowired
     private LocalUploadProperties localUploadProperties;

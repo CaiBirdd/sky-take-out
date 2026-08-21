@@ -43,12 +43,13 @@ public class DishServiceImpl implements DishService {
         // 保存菜品基本信息到菜品表
         dishMapper.insert(dish);
         // 获取菜品id, 因为dishDTO中没有id, 需要从dish中获取
+        // 这里能拿到id是因为dishMapper.insert(dish)执行后，设置了useGeneratedKeys和keyProperty，MyBatis会自动将生成的主键回填到dish对象中
         Long dishId = dish.getId();
         // 保存菜品口味数据到菜品口味表
         List<DishFlavor> flavors = dishDTO.getFlavors();
         if (flavors != null && flavors.size() > 0) {
             flavors.forEach(dishFlavor -> {
-                dishFlavor.setDishId(dishId);
+                dishFlavor.setDishId(dishId);//给口味设置菜品id
             });
             dishFlavorMapper.insertBatch(flavors);
         }
