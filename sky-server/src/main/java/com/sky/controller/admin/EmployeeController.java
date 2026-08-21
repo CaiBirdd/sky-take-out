@@ -107,7 +107,7 @@ public class EmployeeController {
     @PostMapping("/status/{status}")
     @ApiOperation("启用禁用员工账号")
     // @PathVariable注解表示从路径中status获取参数，@RequestParam注解表示从请求参数id中获取参数
-    public Result<String> status(@PathVariable Integer status, @RequestParam Long id) {
+    public Result status(@PathVariable Integer status, @RequestParam Long id) {
         log.info("启用禁用员工账号：status={},id={} ",  status, id);
         employeeService.startOrStop(status,id);
         return Result.success();
