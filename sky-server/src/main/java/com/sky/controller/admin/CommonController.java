@@ -36,6 +36,9 @@ public class CommonController {
      */
     @PostMapping("/upload")
     @ApiOperation("文件上传")
+    //注意这里是文件不是json数据，所以没有@RequestBody注解
+    //MultipartFile 是 Spring MVC 提供的文件上传对象
+    //前端以表单方式上传文件时，后端就可以用它接收文件
     public Result<String> upload(MultipartFile file) {
         log.info("文件上传：{}", file);
 
@@ -49,7 +52,9 @@ public class CommonController {
             suffix = originalFilename.substring(originalFilename.lastIndexOf("."));
         }
 
+        //用 UUID 生成唯一文件名，避免上传文件重名，再保留原文件后缀
         String fileName = UUID.randomUUID() + suffix;
+        //创建上传目录
         File uploadDir = new File(localUploadProperties.getPath());
         if (!uploadDir.exists()) {
             uploadDir.mkdirs();

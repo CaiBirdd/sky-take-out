@@ -29,15 +29,16 @@ public class LocalFileController {
     @GetMapping("/{fileName}")
     public ResponseEntity<Resource> getImage(@PathVariable String fileName) throws IOException {
         if (fileName.contains("/") || fileName.contains("\\")) {
+            //防止别人通过URL访问上传目录之外的文件
             return ResponseEntity.notFound().build();
         }
-
+        //拼接并校验文件路径
         Path uploadPath = Paths.get(localUploadProperties.getPath()).toAbsolutePath().normalize();
         Path filePath = uploadPath.resolve(fileName).normalize();
         if (!filePath.startsWith(uploadPath) || !Files.isRegularFile(filePath)) {
             return ResponseEntity.notFound().build();
         }
-
+        //设置响应类型并返回文件
         String contentType = Files.probeContentType(filePath);
         MediaType mediaType = contentType == null ? MediaType.APPLICATION_OCTET_STREAM : MediaType.parseMediaType(contentType);
 
