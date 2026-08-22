@@ -21,6 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
 import java.util.List;
 
 @Service
@@ -92,10 +93,15 @@ public class DishServiceImpl implements DishService {
             throw new DeletionNotAllowedException(MessageConstant.DISH_BE_RELATED_BY_SETMEAL);
         }
         //删除菜品表中的菜品数据
-        for (Long id : ids) {
-            dishMapper.deleteById(id);
-            dishFlavorMapper.deleteByDishId(id);//删除菜品关联口味表中的口味数据
-        }
+        //for (Long id : ids) {
+        //    dishMapper.deleteById(id);
+        //    dishFlavorMapper.deleteByDishId(id);//删除菜品关联口味表中的口味数据
+        //}
+
+        //根据菜品id集合批量删除菜品数据
+        dishMapper.deleteByIds(ids);
+        //根据菜品id集合批量删除菜品关联口味表中的口味数据
+        dishFlavorMapper.deleteByDishIds(ids);
     }
 
     /**
@@ -131,7 +137,7 @@ public class DishServiceImpl implements DishService {
         dishMapper.update(dish);
         //更新dish_flavor表中的口味信息
         //先删除原有口味数据，再插入新的口味数据
-        dishFlavorMapper.deleteByDishId(dishDTO.getId());
+        dishFlavorMapper.deleteByDishIds(Arrays.asList(dishDTO.getId()));
         List<DishFlavor> flavors = dishDTO.getFlavors();
         if (flavors != null && flavors.size() > 0) {
             flavors.forEach(dishFlavor -> {
