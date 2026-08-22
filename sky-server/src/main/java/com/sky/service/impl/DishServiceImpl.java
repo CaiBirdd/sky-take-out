@@ -136,7 +136,7 @@ public class DishServiceImpl implements DishService {
         BeanUtils.copyProperties(dishDTO, dish);
         dishMapper.update(dish);
         //更新dish_flavor表中的口味信息
-        //先删除原有口味数据，再插入新的口味数据
+        //先删除原有口味数据，再插入新的口味数据，这里由于deleteByDishIds方法修改了，由原来的传入id改为传入id集合，所以这里需要将dishDTO.getId()包装成一个集合
         dishFlavorMapper.deleteByDishIds(Arrays.asList(dishDTO.getId()));
         List<DishFlavor> flavors = dishDTO.getFlavors();
         if (flavors != null && flavors.size() > 0) {
