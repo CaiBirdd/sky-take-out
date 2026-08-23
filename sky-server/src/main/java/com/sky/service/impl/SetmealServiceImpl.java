@@ -21,7 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -104,5 +104,31 @@ public class SetmealServiceImpl implements SetmealService {
         List<SetmealDish> setmealDishes = setmealDishMapper.getBySetmealId(id);
         setmealVO.setSetmealDishes(setmealDishes);
         return setmealVO;
+    }
+    /**
+     * 修改套餐，同时更新套餐和菜品的关联关系
+     * @param setmealDto
+     */
+    @Override
+    @Transactional
+    public void update(SetmealDTO setmealDto) {
+        //更新套餐表中的数据
+        Setmeal setmeal = new Setmeal();
+        BeanUtils.copyProperties(setmealDto, setmeal);
+        setmealMapper.update(setmeal);
+
+        //获取套餐id
+        Long setmealId = setmeal.getId();
+        //删除套餐菜品关联表中的数据 由于deleteBySetmealIds方法接收的是List<Long>类型的参数，所以这里使用Collections.singletonList(setmealId)将setmealId转换为一个只包含一个元素的List
+        //如果是多个可以参考dishIds的写法，使用Arrays.asList(setmealId1, setmealId2, ...)来创建一个包含多个元素的List
+        setmealDishMapper.deleteBySetmealIds(Collections.singletonList(setmealId));
+        //新增套餐菜品关联表中的数据
+        List<SetmealDish> setmealDishes = setmealDto.getSetmealDishes();
+        //为每个套餐菜品关联关系设置套餐id
+        setmealDishes.forEach(setmealDish -> {
+            setmealDish.setSetmealId(setmealId);
+        });
+        //向套餐菜品关联表插入数据,实现修改套餐
+        setmealDishMapper.insertBatch(setmealDishes);
     }
 }
