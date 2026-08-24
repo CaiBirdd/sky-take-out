@@ -15,6 +15,7 @@ import com.sky.mapper.SetmealDishMapper;
 import com.sky.mapper.SetmealMapper;
 import com.sky.result.PageResult;
 import com.sky.service.SetmealService;
+import com.sky.vo.DishItemVO;
 import com.sky.vo.SetmealVO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
@@ -140,15 +141,15 @@ public class SetmealServiceImpl implements SetmealService {
     @Override
     public void startOrStop(Integer status, Long id) {
         //起售套餐时，判断套餐内是否有停售菜品，有停售菜品提示"套餐内包含未启售菜品，无法启售"
-        if(status == StatusConstant.ENABLE){
+        if (status == StatusConstant.ENABLE) {
             List<Dish> dishList = dishMapper.getBySetmealId(id);
-            if(dishList != null && dishList.size()>0){
-               dishList.forEach(dish -> {
-                     if(dish.getStatus() == StatusConstant.DISABLE){
-                          throw new DeletionNotAllowedException(MessageConstant.SETMEAL_ENABLE_FAILED);
-                     }
+            if (dishList != null && dishList.size() > 0) {
+                dishList.forEach(dish -> {
+                    if (dish.getStatus() == StatusConstant.DISABLE) {
+                        throw new DeletionNotAllowedException(MessageConstant.SETMEAL_ENABLE_FAILED);
+                    }
                 });
-                }
+            }
         }
         //更新套餐状态
         Setmeal setmeal = Setmeal.builder()
@@ -156,6 +157,25 @@ public class SetmealServiceImpl implements SetmealService {
                 .status(status)
                 .build();
         setmealMapper.update(setmeal);
-        }
-
     }
+
+    /**
+     * 条件查询套餐
+     * @param setmeal
+     * @return
+     */
+    @Override
+    public List<Setmeal> list(Setmeal setmeal) {
+        return setmealMapper.list(setmeal);
+    }
+
+    /**
+     * 根据套餐id查询菜品选项
+     * @param id
+     * @return
+     */
+    @Override
+    public List<DishItemVO> getDishItemById(Long id) {
+        return setmealMapper.getDishItemBySetmealId(id);
+    }
+}
