@@ -66,4 +66,47 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
         }
 
     }
+    /**
+     * 查看购物车
+     * @return
+     */
+    @Override
+    public List<ShoppingCart> showShoppingCart() {
+        return shoppingCartMapper.list(ShoppingCart.builder()
+                .userId(BaseContext.getCurrentId())
+                .build()
+        );
+    }
+    /**
+     * 清空购物车
+     */
+    @Override
+    public void cleanShoppingCart() {
+        shoppingCartMapper.deleteByUserId(BaseContext.getCurrentId());
+    }
+    /**
+     * 删除购物车中的一个商品
+     * @param shoppingCartDTO
+     */
+    @Override
+    public void subShoppingCart(ShoppingCartDTO shoppingCartDTO) {
+        ShoppingCart shoppingCart = new ShoppingCart();
+        BeanUtils.copyProperties(shoppingCartDTO, shoppingCart);
+        // 设置查询条件，查询当前登录用户的购物车数据
+        shoppingCart.setUserId(BaseContext.getCurrentId());
+
+        List<ShoppingCart> shoppingCartList = shoppingCartMapper.list(shoppingCart);
+
+        if (shoppingCartList != null && shoppingCartList.size() > 0) {
+            shoppingCart = shoppingCartList.get(0);
+            if (shoppingCart.getNumber() > 1) {
+                // 如果数量大于1，就更新数量，数量减1
+                shoppingCart.setNumber(shoppingCart.getNumber() - 1);
+                shoppingCartMapper.updateNumberById(shoppingCart);
+            } else {
+                // 如果数量等于1，就删除该商品
+                shoppingCartMapper.deleteById(shoppingCart.getId());
+            }
+        }
+    }
 }
