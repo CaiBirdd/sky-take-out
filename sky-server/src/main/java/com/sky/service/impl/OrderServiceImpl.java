@@ -197,5 +197,41 @@ public class OrderServiceImpl implements OrderService {
         orderVO.setOrderDetailList(orderDetailList);
         return orderVO;
     }
+    /**
+     * 用户取消订单
+     * @param id
+     */
+    @Override
+    @Transactional
+    public void userCancelById(Long id) {
+        //查订单数据
+        Orders ordersDB = orderMapper.getById(id);
+        if (ordersDB == null) {
+            throw new OrderBusinessException(MessageConstant.ORDER_NOT_FOUND);
+        }
+
+        Long currentUserId = BaseContext.getCurrentId();
+        if (!ordersDB.getUserId().equals(currentUserId)) {
+            throw new OrderBusinessException("当前订单不属于当前用户");
+        }
+        //有 待付款(1) 和 待接单(2) 允许用户取消。
+        if (ordersDB.getStatus() > Orders.TO_BE_CONFIRMED) {
+            throw new OrderBusinessException("当前订单状态下不能取消");
+        }
+
+        Orders orders = new Orders();
+        orders.setId(id);
+        orders.setStatus(Orders.CANCELLED);
+        orders.setCancelReason("用户取消");
+        orders.setCancelTime(LocalDateTime.now());
+
+        // 当前项目使用的是模拟支付，这里同步做模拟退款，不调用真实微信退款接口
+        if (Orders.PAID.equals(ordersDB.getPayStatus())) {
+            orders.setPayStatus(Orders.REFUND);
+        }
+
+        orderMapper.update(orders);
+    }
+
 
 }
