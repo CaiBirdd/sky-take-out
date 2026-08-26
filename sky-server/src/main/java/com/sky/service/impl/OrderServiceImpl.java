@@ -232,6 +232,28 @@ public class OrderServiceImpl implements OrderService {
 
         orderMapper.update(orders);
     }
+    /**
+     * 再来一单
+     * @param id
+     */
+    @Override
+    @Transactional
+    public void repetition(Long id) {
+        //查当前用户id
+        Long userId = BaseContext.getCurrentId();
+        //根据订单id查询当前订单明细
+        List<OrderDetail> orderDetailList = orderDetailMapper.getByOrderId(id);
+        //将订单详情对象转化为购物车对象
+        List<ShoppingCart> shoppingCartList = new ArrayList<>();
+        for (OrderDetail orderDetail : orderDetailList) {
+            ShoppingCart shoppingCart = new ShoppingCart();
+            BeanUtils.copyProperties(orderDetail, shoppingCart);
+            shoppingCart.setUserId(userId);
+            shoppingCartList.add(shoppingCart);
+        }
+        //将购物车对象批量插入到购物车表数据库中
+        shoppingCartMapper.insertBatch(shoppingCartList);
+    }
 
 
 }
