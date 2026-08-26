@@ -2,18 +2,21 @@ package com.sky.service.impl;
 
 import com.sky.constant.MessageConstant;
 import com.sky.context.BaseContext;
+import com.sky.dto.OrdersPaymentDTO;
 import com.sky.dto.OrdersSubmitDTO;
 import com.sky.entity.AddressBook;
 import com.sky.entity.OrderDetail;
 import com.sky.entity.Orders;
 import com.sky.entity.ShoppingCart;
 import com.sky.exception.AddressBookBusinessException;
+import com.sky.exception.OrderBusinessException;
 import com.sky.exception.ShoppingCartBusinessException;
 import com.sky.mapper.AddressBookMapper;
 import com.sky.mapper.OrderDetailMapper;
 import com.sky.mapper.OrderMapper;
 import com.sky.mapper.ShoppingCartMapper;
 import com.sky.service.OrderService;
+import com.sky.vo.OrderPaymentVO;
 import com.sky.vo.OrderSubmitVO;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -96,6 +99,46 @@ public class OrderServiceImpl implements OrderService {
                 .orderTime(order.getOrderTime())
                 .build();
         return orderSubmitVO;
+    }
+
+    /**
+     * 模拟支付：不调用微信，直接将订单置为已支付，方便后续流程联调
+     * @param ordersPaymentDTO
+     * @return
+     */
+    @Override
+    @Transactional
+    public OrderPaymentVO payment(OrdersPaymentDTO ordersPaymentDTO) {
+        Orders ordersDB = orderMapper.getByNumber(ordersPaymentDTO.getOrderNumber());
+        if (ordersDB == null) {
+            throw new OrderBusinessException("订单不存在");
+        }
+
+        Long currentUserId = BaseContext.getCurrentId();
+        if (!ordersDB.getUserId().equals(currentUserId)) {
+            throw new OrderBusinessException("当前订单不属于当前用户");
+        }
+
+        if (Orders.PAID.equals(ordersDB.getPayStatus())) {
+            throw new OrderBusinessException("该订单已支付");
+        }
+
+        Orders orders = Orders.builder()
+                .id(ordersDB.getId())
+                .status(Orders.TO_BE_CONFIRMED)
+                .payStatus(Orders.PAID)
+                .payMethod(ordersPaymentDTO.getPayMethod())
+                .checkoutTime(LocalDateTime.now())
+                .build();
+        orderMapper.update(orders);
+
+        return OrderPaymentVO.builder()
+                .timeStamp(String.valueOf(System.currentTimeMillis() / 1000))
+                .nonceStr("mock-pay")
+                .signType("MOCK")
+                .paySign("mock-pay-success")
+                .packageStr("mock:" + ordersDB.getNumber())
+                .build();
     }
 
 }
