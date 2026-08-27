@@ -5,10 +5,7 @@ import com.github.pagehelper.PageHelper;
 import com.github.xiaoymin.knife4j.core.util.CollectionUtils;
 import com.sky.constant.MessageConstant;
 import com.sky.context.BaseContext;
-import com.sky.dto.OrdersConfirmDTO;
-import com.sky.dto.OrdersPageQueryDTO;
-import com.sky.dto.OrdersPaymentDTO;
-import com.sky.dto.OrdersSubmitDTO;
+import com.sky.dto.*;
 import com.sky.entity.AddressBook;
 import com.sky.entity.OrderDetail;
 import com.sky.entity.Orders;
@@ -358,5 +355,30 @@ public class OrderServiceImpl implements OrderService {
                 .build();
 
         orderMapper.update(orders);
+    }
+    /**
+     * 拒单
+     * @param ordersRejectionDTO
+     */
+    @Override
+    public  void rejection(OrdersRejectionDTO ordersRejectionDTO) {
+        // 根据id查询订单
+        Orders ordersDB = orderMapper.getById(ordersRejectionDTO.getId());
+        // 订单只有存在且状态为2（待接单）才可以拒单
+        if (ordersDB == null || !ordersDB.getStatus().equals(Orders.TO_BE_CONFIRMED)) {
+            throw new OrderBusinessException(MessageConstant.ORDER_STATUS_ERROR);
+        }
+        // 拒单需要退款，根据订单id更新订单状态、拒单原因、取消时间
+        Integer payStatus = ordersDB.getPayStatus();
+        if(payStatus == Orders.PAID){
+            Orders orders = Orders.builder()
+                    .id(ordersRejectionDTO.getId())
+                    .status(Orders.CANCELLED)
+                    .payStatus(Orders.REFUND)
+                    .cancelReason(ordersRejectionDTO.getRejectionReason())
+                    .cancelTime(LocalDateTime.now())
+                    .build();
+            orderMapper.update(orders);
+        }
     }
 }
