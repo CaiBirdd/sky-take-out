@@ -381,4 +381,26 @@ public class OrderServiceImpl implements OrderService {
             orderMapper.update(orders);
         }
     }
+    /**
+     * 取消订单
+     * @param ordersCancelDTO
+     */
+    @Override
+    public  void cancel(OrdersCancelDTO ordersCancelDTO) {
+        // 根据id查询订单
+        Orders ordersDB = orderMapper.getById(ordersCancelDTO.getId());
+
+        // 取消订单需要退款，根据订单id更新订单状态、取消原因、取消时间
+        Integer payStatus = ordersDB.getPayStatus();
+        if(payStatus == Orders.PAID){
+            Orders orders = Orders.builder()
+                    .id(ordersCancelDTO.getId())
+                    .status(Orders.CANCELLED)
+                    .payStatus(Orders.REFUND)
+                    .cancelReason(ordersCancelDTO.getCancelReason())
+                    .cancelTime(LocalDateTime.now())
+                    .build();
+            orderMapper.update(orders);
+        }
+    }
 }
