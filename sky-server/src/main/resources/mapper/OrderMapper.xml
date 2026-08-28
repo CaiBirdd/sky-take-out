@@ -84,4 +84,36 @@
             </if>
         </where>
     </select>
+    <!--动态查询 统计订单数量 因为在map中所以爆红-->
+    <select id="countByMap" resultType="java.lang.Integer">
+        select count(id) from orders
+        <where>
+            <if test="status != null">
+                and status = #{status}
+            </if>
+            <if test="begin != null">
+                and order_time &gt;= #{begin}
+            </if>
+            <if test="end != null">
+                and order_time &lt;= #{end}
+            </if>
+        </where>
+    </select>
+    <!--动态查询 销量前十
+    先按商品名称分组，再组内求和(分组后，一组有多个数量)，最后按数量降序排列，取前十条数据
+    -->
+    <select id="getSalesTop10" resultType="com.sky.dto.GoodsSalesDTO">
+        select  od.name, sum(od.number) number from order_detail od, orders o
+        where od.order_id = o.id
+        and o.status = 5
+        <if test="beginTime != null">
+                and o.order_time &gt;= #{beginTime}
+        </if>
+        <if test="endTime != null">
+                and o.order_time &lt;= #{endTime}
+        </if>
+        group by od.name
+        order by number desc
+        limit 0,10
+    </select>
 </mapper>
