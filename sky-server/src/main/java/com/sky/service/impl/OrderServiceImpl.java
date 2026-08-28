@@ -1,5 +1,6 @@
 package com.sky.service.impl;
 
+import com.alibaba.fastjson.JSON;
 import com.github.pagehelper.Page;
 import com.github.pagehelper.PageHelper;
 import com.github.xiaoymin.knife4j.core.util.CollectionUtils;
@@ -23,6 +24,7 @@ import com.sky.vo.OrderPaymentVO;
 import com.sky.vo.OrderStatisticsVO;
 import com.sky.vo.OrderSubmitVO;
 import com.sky.vo.OrderVO;
+import com.sky.websocket.WebSocketServer;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -30,7 +32,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -43,6 +47,8 @@ public class OrderServiceImpl implements OrderService {
     private ShoppingCartMapper shoppingCartMapper;
     @Autowired
     private AddressBookMapper addressBookMapper;
+    @Autowired
+    private WebSocketServer webSocketServer;
 
     /**
      * 用户下单
@@ -140,6 +146,16 @@ public class OrderServiceImpl implements OrderService {
                 .build();
         orderMapper.update(orders);
 
+        //新增：支付成功后，向后台发送WebSocket消息，通知有新订单
+        //首先构造map
+        Map map = new HashMap();
+        map.put("type", 1);//消息类型，1表示来单提醒
+        map.put("orderId", ordersDB.getId());//订单id
+        map.put("content", "订单号：" + ordersDB.getNumber());
+        // //通过WebSocket实现来单提醒，向客户端浏览器推送消息 注意转换成json
+        webSocketServer.sendToAllClient(JSON.toJSONString(map));
+
+
         return OrderPaymentVO.builder()
                 .timeStamp(String.valueOf(System.currentTimeMillis() / 1000))
                 .nonceStr("mock-pay")
@@ -147,6 +163,7 @@ public class OrderServiceImpl implements OrderService {
                 .paySign("mock-pay-success")
                 .packageStr("mock:" + ordersDB.getNumber())
                 .build();
+
     }
 
     /**
@@ -447,5 +464,27 @@ public class OrderServiceImpl implements OrderService {
                 .build();
 
         orderMapper.update(orders);
+    }
+    /**
+     * 用户催单
+     * @param id
+     */
+    @Override
+    public void reminder(Long id) {
+        // 根据id查询订单
+        Orders ordersDB = orderMapper.getById(id);
+
+        // 校验订单是否存在，并且状态为2或3
+        if (ordersDB == null ) {
+            throw new OrderBusinessException(MessageConstant.ORDER_NOT_FOUND);
+        }
+
+        // 发送催单消息给商家基于websocketbsocket
+        Map<String, Object> map = new HashMap<>();
+        map.put("type",2);//2是用户催单
+        map.put("orderId", id);
+        map.put("content", "订单号：" + ordersDB.getNumber());
+
+        webSocketServer.sendToAllClient(JSON.toJSONString(map));
     }
 }
