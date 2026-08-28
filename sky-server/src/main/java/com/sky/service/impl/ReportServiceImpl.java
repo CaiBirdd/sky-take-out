@@ -2,8 +2,10 @@ package com.sky.service.impl;
 
 import com.sky.entity.Orders;
 import com.sky.mapper.OrderMapper;
+import com.sky.mapper.UserMapper;
 import com.sky.service.ReportService;
 import com.sky.vo.TurnoverReportVO;
+import com.sky.vo.UserReportVO;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +24,8 @@ import java.util.Map;
 public class ReportServiceImpl implements ReportService {
     @Autowired
     private OrderMapper orderMapper;
+    @Autowired
+    private UserMapper userMapper;
     /**
      * 根据时间区间统计营业额
      * @param begin
@@ -58,5 +62,56 @@ public class ReportServiceImpl implements ReportService {
                 .dateList(StringUtils.join(dateList, ","))
                 .turnoverList(StringUtils.join(turnoverList, ","))
                 .build();
+    }
+
+    /**
+     * 获取用户数据统计
+     * @param begin
+     * @param end
+     * @return
+     */
+    @Override
+    public UserReportVO getUserStatistics(LocalDate begin, LocalDate end) {
+        List<LocalDate> dateList = new ArrayList<>();
+        dateList.add(begin);
+
+        while (!begin.equals(end)) {
+            begin = begin.plusDays(1);//日期计算，获得指定日期后1天的日期
+            dateList.add(begin);
+        }
+        List<Integer> newUserList = new ArrayList<>();//新增用户数
+        List<Integer> totalUserList = new ArrayList<>();//总用户数
+        for (LocalDate date : dateList) {
+            //这里传入的的日期格式是yyyy-MM-dd，数据库中存储的时间格式是yyyy-MM-dd HH:mm:ss，所以需要将日期转换为时间范围
+            LocalDateTime beginTime = LocalDateTime.of(date, LocalTime.MIN);//获取指定日期的00:00:00
+            LocalDateTime endTime = LocalDateTime.of(date, LocalTime.MAX);//获取指定日期的23:59:59
+
+            //新增用户数量 select count(id) from user where create_time > ? and create_time < ?
+            Integer newUser = getUserCount(beginTime, endTime);
+            //总用户数量 select count(id) from user where  create_time < ?
+            Integer totalUser = getUserCount(null, endTime);
+
+            newUserList.add(newUser);
+            totalUserList.add(totalUser);
+    }
+        // 封装返回结果
+        return UserReportVO.builder()
+                .dateList(StringUtils.join(dateList, ","))
+                .newUserList(StringUtils.join(newUserList, ","))
+                .totalUserList(StringUtils.join(totalUserList, ","))
+                .build();
+
+    }
+    /**
+     * 根据时间区间统计用户数量
+     * @param beginTime
+     * @param endTime
+     * @return
+     */
+    private Integer getUserCount(LocalDateTime beginTime, LocalDateTime endTime) {
+        Map map = new HashMap();
+        map.put("begin",beginTime);
+        map.put("end", endTime);
+        return userMapper.countByMap(map);
     }
 }
